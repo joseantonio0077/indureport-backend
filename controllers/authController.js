@@ -7,6 +7,11 @@ exports.register = async (req, res) => {
   try {
     const { username, password, name, email, role } = req.body;
     
+    // Verificar campos requeridos
+    if (!username || !password || !name || !email) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+    
     // Verificar si el usuario ya existe
     let user = await User.findOne({ $or: [{ username }, { email }] });
     if (user) {
@@ -52,6 +57,11 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
+    
+    // Verificar campos requeridos
+    if (!username || !password) {
+      return res.status(400).json({ error: 'El nombre de usuario y la contraseña son obligatorios' });
+    }
     
     // Buscar usuario
     const user = await User.findOne({ username });

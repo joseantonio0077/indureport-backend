@@ -30,10 +30,25 @@ app.use('/api/reports', reportRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-  res.send('API de InduReport funcionando correctamente');
+  res.json({ message: 'API de InduReport funcionando correctamente' });
+});
+
+// Middleware para manejar rutas no encontradas
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
+});
+
+// Middleware global para manejo de errores
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Error en el servidor',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });

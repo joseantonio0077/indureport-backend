@@ -1,17 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const reportController = require('../controllers/reportController');
-const auth = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const { auth, checkRole } = require('../middleware/auth');
 
-// Aplicar middleware de autenticación a todas las rutas
-router.use(auth);
+// Si tienes un controlador para reportes, impórtalo así:
+// const reportController = require('../controllers/reportController');
 
-// Rutas de reportes
-router.get('/', reportController.getReports);
-router.get('/:id', reportController.getReportById);
-router.post('/', upload.array('images', 5), reportController.createReport);
-router.put('/:id', upload.array('images', 5), reportController.updateReport);
-router.delete('/:id', reportController.deleteReport);
+// Ruta de prueba para verificar que funciona
+router.get('/test', auth, (req, res) => {
+  res.json({ message: 'API de reportes funcionando correctamente' });
+});
+
+// Aquí puedes definir tus rutas para reportes
+// router.get('/', auth, reportController.getReports);
+// router.post('/', auth, reportController.createReport);
+// router.get('/:id', auth, reportController.getReportById);
+// router.put('/:id', auth, reportController.updateReport);
+// router.delete('/:id', auth, reportController.deleteReport);
 
 module.exports = router;

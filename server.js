@@ -22,11 +22,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Importar rutas
 const authRoutes = require('./routes/auth');
-const reportRoutes = require('./routes/reports');
+const reportRoutes = require('./routes/reports'); // Asegúrate de que esta línea exista
 
 // Usar rutas
 app.use('/api/auth', authRoutes);
-app.use('/api/reports', reportRoutes);
+app.use('/api/reports', reportRoutes); // Asegúrate de que esta línea exista
 
 // Ruta de prueba
 app.get('/', (req, res) => {

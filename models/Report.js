@@ -1,49 +1,40 @@
 const mongoose = require('mongoose');
 
-const AttachmentSchema = new mongoose.Schema({
-  uri: {
-    type: String,
-    required: true
-  },
-  type: {
-    type: String,
-    default: 'image'
-  }
-});
-
 const ReportSchema = new mongoose.Schema({
-  localId: {
-    type: String
-  },
   type: {
     type: String,
-    enum: ['incident', 'maintenance', 'improvement'],
-    required: true
+    required: true,
+    enum: ['incident', 'maintenance', 'production', 'safety']
   },
   area: {
     type: String,
-    enum: ['production', 'warehouse', 'laboratory', 'offices'],
     required: true
   },
   description: {
     type: String,
     required: true
   },
-  maintenanceType: {
-    type: String,
-    enum: ['corrective', 'preventive', 'predictive'],
-    default: 'corrective'
-  },
   shiftType: {
     type: String,
-    enum: ['morning', 'afternoon', 'night'],
-    required: true
+    required: true,
+    enum: ['morning', 'afternoon', 'night']
   },
-  attachments: [AttachmentSchema],
+  images: [{
+    type: String
+  }],
+  status: {
+    type: String,
+    enum: ['pending', 'in-progress', 'completed', 'rejected'],
+    default: 'pending'
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   createdAt: {
     type: Date,
@@ -52,14 +43,6 @@ const ReportSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  },
-  syncStatus: {
-    type: String,
-    enum: ['pending', 'syncing', 'synced'],
-    default: 'synced'
-  },
-  syncedAt: {
-    type: Date
   }
 });
 

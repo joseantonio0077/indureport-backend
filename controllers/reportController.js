@@ -1,20 +1,23 @@
 const Report = require('../models/Report');
-const fs = require('fs');
-const path = require('path');
 
 // Obtener todos los reportes
 exports.getReports = async (req, res) => {
   try {
-    // Filtrar reportes por usuario si no es admin
     let query = {};
+    
+    // Si no es admin, solo ver los reportes creados por el usuario
     if (req.user.role !== 'admin') {
       query.createdBy = req.user.id;
     }
     
-    const reports = await Report.find(query).sort({ createdAt: -1 });
+    const reports = await Report.find(query)
+      .populate('createdBy', 'username name')
+      .populate('assignedTo', 'username name')
+      .sort({ createdAt: -1 });
+    
     res.json(reports);
   } catch (error) {
-    console.error('Error obteniendo reportes:', error);
+    console.error('Error al obtener reportes:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
@@ -22,20 +25,22 @@ exports.getReports = async (req, res) => {
 // Obtener un reporte específico
 exports.getReportById = async (req, res) => {
   try {
-    const report = await Report.findById(req.params.id);
+    const report = await Report.findById(req.params.id)
+      .populate('createdBy', 'username name')
+      .populate('assignedTo', 'username name');
     
     if (!report) {
       return res.status(404).json({ error: 'Reporte no encontrado' });
     }
     
-    // Verificar permisos si no es admin
-    if (req.user.role !== 'admin' && report.createdBy.toString() !== req.user.id) {
+    // Verificar permisos (solo admin o el creador pueden ver)
+    if (req.user.role !== 'admin' && report.createdBy._id.toString() !== req.user.id) {
       return res.status(403).json({ error: 'No tienes permiso para ver este reporte' });
     }
     
     res.json(report);
   } catch (error) {
-    console.error('Error obteniendo reporte:', error);
+    console.error('Error al obtener reporte:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
@@ -43,113 +48,67 @@ exports.getReportById = async (req, res) => {
 // Crear un nuevo reporte
 exports.createReport = async (req, res) => {
   try {
-    const reportData = req.body;
+    const { type, area, description, shiftType } = req.body;
     
-    // Procesar adjuntos
-    let attachments = [];
-    if (reportData.attachments) {
-      // Si es string, parsearlo
-      if (typeof reportData.attachments === 'string') {
-        try {
-          attachments = JSON.parse(reportData.attachments);
-        } catch (e) {
-          console.error('Error parseando adjuntos:', e);
-        }
-      } else {
-        attachments = reportData.attachments;
-      }
+    // Verificar campos requeridos
+    if (!type || !area || !description || !shiftType) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
     
-    // Añadir archivos subidos a los adjuntos
-    if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
-        attachments.push({
-          uri: `/uploads/${file.filename}`,
-          type: 'image'
-        });
-      });
-    }
-    
-    const newReport = new Report({
-      localId: reportData.localId,
-      type: reportData.type,
-      area: reportData.area,
-      description: reportData.description,
-      maintenanceType: reportData.maintenanceType,
-      shiftType: reportData.shiftType,
-      attachments: attachments,
+    // Crear el reporte
+    const report = new Report({
+      type,
+      area,
+      description,
+      shiftType,
       createdBy: req.user.id,
-      createdAt: reportData.createdAt || new Date(),
-      updatedAt: new Date(),
-      syncStatus: 'synced',
-      syncedAt: new Date()
+      images: req.files ? req.files.map(file => file.filename) : []
     });
     
-    await newReport.save();
+    await report.save();
     
-    res.status(201).json(newReport);
+    res.status(201).json(report);
   } catch (error) {
-    console.error('Error creando reporte:', error);
+    console.error('Error al crear reporte:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
 
-// Actualizar un reporte existente
+// Actualizar un reporte
 exports.updateReport = async (req, res) => {
   try {
-    const reportData = req.body;
-    
-    let report = await Report.findById(req.params.id);
+    const report = await Report.findById(req.params.id);
     
     if (!report) {
       return res.status(404).json({ error: 'Reporte no encontrado' });
     }
     
-    // Verificar permisos si no es admin
+    // Verificar permisos (solo admin o el creador pueden editar)
     if (req.user.role !== 'admin' && report.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ error: 'No tienes permiso para editar este reporte' });
     }
     
-    // Actualizar adjuntos si se proporcionan
-    if (reportData.attachments) {
-      let attachments = [];
-      if (typeof reportData.attachments === 'string') {
-        try {
-          attachments = JSON.parse(reportData.attachments);
-        } catch (e) {
-          attachments = report.attachments;
-        }
-      } else {
-        attachments = reportData.attachments;
-      }
-      
-      reportData.attachments = attachments;
+    // Actualizar campos
+    const { type, area, description, shiftType, status, assignedTo } = req.body;
+    
+    if (type) report.type = type;
+    if (area) report.area = area;
+    if (description) report.description = description;
+    if (shiftType) report.shiftType = shiftType;
+    
+    // Solo admin puede cambiar estos campos
+    if (req.user.role === 'admin') {
+      if (status) report.status = status;
+      if (assignedTo) report.assignedTo = assignedTo;
     }
     
-    // Añadir archivos subidos a los adjuntos
-    if (req.files && req.files.length > 0) {
-      const attachments = reportData.attachments || report.attachments;
-      req.files.forEach(file => {
-        attachments.push({
-          uri: `/uploads/${file.filename}`,
-          type: 'image'
-        });
-      });
-      reportData.attachments = attachments;
-    }
+    report.updatedAt = Date.now();
     
-    // Actualizar reporte
-    reportData.updatedAt = new Date();
-    
-    report = await Report.findByIdAndUpdate(
-      req.params.id,
-      { $set: reportData },
-      { new: true }
-    );
+    await report.save();
     
     res.json(report);
   } catch (error) {
-    console.error('Error actualizando reporte:', error);
+    console.error('Error al actualizar reporte:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
@@ -163,26 +122,16 @@ exports.deleteReport = async (req, res) => {
       return res.status(404).json({ error: 'Reporte no encontrado' });
     }
     
-    // Verificar permisos si no es admin
+    // Solo admin o el creador pueden eliminar
     if (req.user.role !== 'admin' && report.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ error: 'No tienes permiso para eliminar este reporte' });
     }
     
-    // Eliminar imágenes asociadas
-    report.attachments.forEach(attachment => {
-      if (attachment.uri.startsWith('/uploads/')) {
-        const filePath = path.join(__dirname, '..', attachment.uri);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
-    });
-    
-    await report.remove();
+    await Report.findByIdAndDelete(req.params.id);
     
     res.json({ message: 'Reporte eliminado correctamente' });
   } catch (error) {
-    console.error('Error eliminando reporte:', error);
+    console.error('Error al eliminar reporte:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };

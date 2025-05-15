@@ -19,11 +19,11 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use(helmet());
-app.use('/api/', rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100 // límite por IP
-}));
+//app.use(helmet());
+//app.use('/api/', rateLimit({
+ // windowMs: 15 * 60 * 1000, // 15 minutos
+  //max: 100 // límite por IP
+//}));
 
 // Servir archivos estáticos (imágenes)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

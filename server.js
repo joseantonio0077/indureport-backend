@@ -5,8 +5,8 @@ const path = require('path');
 const connectDB = require('./config/db');
 require('dotenv').config();
 
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+//const helmet = require('helmet');
+//const rateLimit = require('express-rate-limit');
 // Conectar a la base de datos
 connectDB();
 

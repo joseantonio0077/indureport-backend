@@ -4,7 +4,7 @@ const ReportSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['incident', 'maintenance', 'production', 'safety']
+    enum: ['maintenance', 'shift_change', 'finding', 'assessment']
   },
   area: {
     type: String,

@@ -55,6 +55,16 @@ app.use((err, req, res, next) => {
   });
 });
 
+app.post('/api/auth/login', (req, res, next) => {
+  console.log('==== DEBUG LOGIN REQUEST (con /api) ====');
+  console.log('Método:', req.method);
+  console.log('URL:', req.originalUrl);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('============================');
+  next(); // Continúa con el manejo normal del endpoint
+});
+
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);

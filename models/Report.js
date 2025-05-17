@@ -1,30 +1,35 @@
+// models/Report.js
 const mongoose = require('mongoose');
 
 const ReportSchema = new mongoose.Schema({
-  type: {
+  title: {
     type: String,
-    required: true,
-    enum: ['maintenance', 'shift_change', 'finding', 'assessment']
-  },
-  area: {
-    type: String,
-    required: true
+    required: [true, 'El título es obligatorio']
   },
   description: {
     type: String,
-    required: true
+    required: [true, 'La descripción es obligatoria']
   },
-  shiftType: {
+  type: {
     type: String,
-    required: true,
-    enum: ['morning', 'afternoon', 'night']
+    enum: ['maintenance', 'shift', 'finding', 'assessment', 'info', 'incident', 'survey'],
+    required: [true, 'El tipo de reporte es obligatorio']
   },
-  images: [{
+  area: {
+    type: String,
+    required: [true, 'El área es obligatoria']
+  },
+  location: {
     type: String
-  }],
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
   status: {
     type: String,
-    enum: ['pending', 'in-progress', 'completed', 'rejected'],
+    enum: ['pending', 'in_progress', 'completed', 'rejected'],
     default: 'pending'
   },
   createdBy: {
@@ -36,14 +41,40 @@ const ReportSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  images: [String],
+  gpsLocation: {
+    latitude: Number,
+    longitude: Number,
+    accuracy: Number
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  synced: {
+    type: Boolean,
+    default: false
+  },
+  syncedAt: {
+    type: Date
+  },
+  localId: {
+    type: String
+  },
+  // Campos específicos según tipo de reporte
+  maintenanceType: {
+    type: String,
+    enum: ['preventive', 'corrective', 'predictive', 'improvement'],
+    required: function() { return this.type === 'maintenance'; }
+  },
+  shiftType: {
+    type: String,
+    enum: ['morning', 'afternoon', 'night'],
+    required: function() { return this.type === 'shift'; }
+  },
+  nextShiftType: {
+    type: String,
+    enum: ['morning', 'afternoon', 'night'],
+    required: function() { return this.type === 'shift'; }
   }
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Report', ReportSchema);

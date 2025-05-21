@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: indureport-backend
+    env: node
+    buildCommand: npm install && npm rebuild bcrypt --build-from-source
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true 

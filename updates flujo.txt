@@ -1,6 +1,0 @@
-Para futuros cambios, el flujo será:
-
-
-git add .
-git commit -m "Descripción del cambio"
-git push

@@ -13,8 +13,24 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Configuración de CORS
+const corsOptions = {
+  origin: [
+    'https://indureport-backend.onrender.com',
+    'exp://54.191.253.12:19000',
+    'exp://44.226.122.3:19006',
+    'exp://52.41.36.82:19000',
+    'exp://192.168.100.6:19000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // 24 horas
+};
+
+app.use(cors(corsOptions));
+
 // Middleware
-app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -26,6 +42,7 @@ const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 const syncRoutes = require('./routes/sync'); // Importar rutas de sincronización
 const userRoutes = require('./routes/users'); // Importar rutas de usuarios
+const statusRoutes = require('./routes/status');
 
 // Middleware de debug para todas las peticiones
 app.use((req, res, next) => {
@@ -37,18 +54,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Modificar rutas para aceptar con y sin prefijo
-// Rutas con prefijo /api (original)
-app.use('/api/auth', authRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/sync', syncRoutes);
-app.use('/api/users', userRoutes);
+// Configuración de rutas con y sin prefijo /api
+const routeConfig = [
+  { path: '/auth', router: authRoutes },
+  { path: '/reports', router: reportRoutes },
+  { path: '/sync', router: syncRoutes },
+  { path: '/users', router: userRoutes },
+  { path: '/status', router: statusRoutes }
+];
 
-// Rutas sin prefijo /api (nuevo)
-app.use('/auth', authRoutes);
-app.use('/reports', reportRoutes);
-app.use('/sync', syncRoutes);
-app.use('/users', userRoutes);
+// Aplicar rutas con y sin prefijo
+routeConfig.forEach(({ path, router }) => {
+  app.use(`/api${path}`, router);
+  app.use(path, router);
+});
 
 // Ruta de prueba/verificación
 app.get('/', (req, res) => {
@@ -82,10 +101,24 @@ app.use('*', (req, res) => {
 // Middleware global para manejo de errores
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err.stack);
-  res.status(500).json({ 
+  
+  // Determinar el código de estado apropiado
+  const statusCode = err.statusCode || 500;
+  
+  // Preparar respuesta de error
+  const errorResponse = {
+    success: false,
     error: 'Error en el servidor',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Error interno del servidor'
-  });
+  };
+
+  // Agregar detalles adicionales en desarrollo
+  if (process.env.NODE_ENV === 'development') {
+    errorResponse.stack = err.stack;
+    errorResponse.details = err;
+  }
+
+  res.status(statusCode).json(errorResponse);
 });
 
 // Iniciar el servidor
@@ -97,4 +130,5 @@ app.listen(PORT, () => {
   console.log('- Reports: /api/reports/* y /reports/*');
   console.log('- Sync: /api/sync/* y /sync/*');
   console.log('- Users: /api/users/* y /users/*');
+  console.log('- Status: /api/status/* y /status/*');
 });

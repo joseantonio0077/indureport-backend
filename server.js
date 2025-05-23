@@ -21,6 +21,7 @@ const corsOptions = {
     'exp://44.226.122.3:19006',
     'exp://52.41.36.82:19000',
     'exp://192.168.100.6:19000'
+    'exp://192.168.100.6:8081'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
